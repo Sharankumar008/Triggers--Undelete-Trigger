@@ -1,0 +1,25 @@
+//Whenever a deleted account is restored
+//we need to set one of the existing account record as parent account on restored account in apex trigger
+
+trigger AccountTrigger on Account (after undelete) {
+    
+    Map<Id, Id> accountParentMap = new Map<Id, Id>();
+    
+    for (Account restoredAccount : Trigger.new) {
+        Id parentAccountId = [SELECT Id FROM Account WHERE Name = 'Restored Accounts'].Id;
+        
+        if (parentAccountId != null) {
+            accountParentMap.put(restoredAccount.Id, parentAccountId);
+        }
+    }
+    
+    List<Account> accountsToUpdate = new List<Account>();
+    for (Id accountId : accountParentMap.keySet()) {
+        Account restoredAccount = new Account(Id = accountId, ParentId = accountParentMap.get(accountId));
+        accountsToUpdate.add(restoredAccount);
+    }
+    
+    if (!accountsToUpdate.isEmpty()) {
+        update accountsToUpdate;
+    }
+}
